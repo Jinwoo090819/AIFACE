@@ -90,3 +90,10 @@ photo-score-mvp/
 - Added gender field to profile
 - Gender is displayed in result metadata
 - Gender does not change the visual-impression score
+
+
+## v4 visual refresh
+- Added 8-bit headline/UI styling using Press Start 2P
+- Improved readability with larger body typography and clearer spacing
+- Removed the analysis-criteria notice block
+- Tightened hero text and simplified call-to-action labels

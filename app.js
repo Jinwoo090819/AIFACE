@@ -416,7 +416,7 @@ function renderResults(results) {
   document.getElementById("resultTitle").textContent = `${name} // VISUAL SCAN`;
   document.getElementById("resultMeta").textContent = `${age}세 · ${gender} · ${results.length}장 분석 완료`;
   document.getElementById("mainScore").textContent = representative;
-  document.getElementById("percentileBadge").textContent = `사이트 비주얼 인상 기준 상위 ${percentile}%`;
+  document.getElementById("percentileBadge").textContent = `사이트 기준 상위 ${percentile}%`;
 
   document.getElementById("personalColor").textContent = `${color.type} · 신뢰도 ${color.confidence}`;
   document.getElementById("colorNote").textContent =

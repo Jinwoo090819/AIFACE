@@ -6,18 +6,21 @@
   <meta name="theme-color" content="#f4c43f" />
   <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   <title>AIFACE — Visual Scan</title>
-  <meta name="description" content="사진 속 비주얼 인상과 퍼스널 컬러를 분석하는 비상업용 레트로 데모" />
+  <meta name="description" content="얼굴 인상 점수와 퍼스널 컬러를 분석하는 비상업용 레트로 데모" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <main class="app-shell">
     <header class="hero">
-      <div class="brand">AIFACE // VISUAL SCAN</div>
+      <div class="brand">AIFACE // RETRO SCAN</div>
       <h1>HOW DO I LOOK<br>ON CAMERA?</h1>
       <p class="subtitle">
-        사진 속 비주얼 인상 · 사이트 기준 상위 % · 퍼스널 컬러를 레트로 스캔합니다.
+        얼굴 인상 점수 · 상위 % · 퍼스널 컬러를 8BIT 스타일로 분석합니다.
       </p>
-      <div class="privacy-chip">LOCAL MODE // 사진은 서버로 전송되지 않고 브라우저에서만 처리됩니다.</div>
+      <div class="privacy-chip">LOCAL MODE // 사진은 브라우저에서만 처리됩니다.</div>
       <div class="retro-strip">
         <span>FACE / STYLE / COLOR</span>
         <span>EST. 2026</span>
@@ -28,7 +31,7 @@
     <section id="setupSection" class="panel">
       <div class="section-head">
         <span class="step">01 // PROFILE</span>
-        <h2>기본 정보</h2>
+        <h2>기본 정보 입력</h2>
       </div>
 
       <div class="grid profile-grid">
@@ -60,20 +63,13 @@
       <label class="dropzone" id="dropzone">
         <input id="fileInput" type="file" accept="image/*" multiple hidden />
         <div class="drop-icon">＋</div>
-        <strong>SELECT PHOTOS</strong>
-        <span>UP TO 5 FILES // JPG PNG WEBP</span>
+        <strong>PHOTO SELECT</strong>
+        <span>MAX 5 FILES // JPG PNG WEBP</span>
       </label>
 
       <div id="previewGrid" class="preview-grid"></div>
 
-      <div class="notice">
-        <strong>분석 기준</strong>
-        <p>
-          이 데모는 얼굴 생김새 자체를 서열화하지 않습니다. 사진에서 보이는 <b>인상 연출, 조명, 선명도, 대비, 색감</b>을 바탕으로 비주얼 인상 점수를 계산합니다.
-        </p>
-      </div>
-
-      <button id="analyzeButton" class="primary" disabled>START VISUAL SCAN</button>
+      <button id="analyzeButton" class="primary" disabled>START SCAN</button>
     </section>
 
     <section id="loadingSection" class="panel hidden">
@@ -88,7 +84,7 @@
     <section id="resultSection" class="hidden">
       <div class="panel result-hero">
         <div>
-          <div class="eyebrow">SCAN COMPLETE</div>
+          <div class="eyebrow">RESULT</div>
           <h2 id="resultTitle">분석 결과</h2>
           <p id="resultMeta"></p>
         </div>
@@ -97,7 +93,7 @@
 
       <div class="result-grid">
         <article class="panel score-card">
-          <div class="card-label">VISUAL IMPRESSION SCORE</div>
+          <div class="card-label">FACE SCORE</div>
           <div class="score-line">
             <span id="mainScore" class="main-score">--</span>
             <span class="score-max">/ 100</span>
@@ -109,7 +105,7 @@
         </article>
 
         <article class="panel color-card">
-          <div class="card-label">PERSONAL COLOR // BETA</div>
+          <div class="card-label">PERSONAL COLOR</div>
           <h3 id="personalColor">--</h3>
           <div id="colorSwatches" class="swatches"></div>
           <p id="colorNote" class="muted"></p>
@@ -119,7 +115,7 @@
       <article class="panel">
         <div class="section-head">
           <span class="step">03 // PHOTO BREAKDOWN</span>
-          <h2>사진별 분석</h2>
+          <h2>사진별 결과</h2>
         </div>
         <div id="photoResults" class="photo-results"></div>
       </article>
@@ -127,14 +123,14 @@
       <article class="panel">
         <div class="section-head">
           <span class="step">04 // STYLE TIPS</span>
-          <h2>개선 팁</h2>
+          <h2>스타일 팁</h2>
         </div>
         <ul id="tipsList" class="tips-list"></ul>
       </article>
     </section>
 
     <footer>
-      AIFACE 2026 // NON-COMMERCIAL DEMO // RESULTS VARY BY LIGHTING
+      AIFACE 2026 // RETRO FACE SCAN
     </footer>
   </main>
 
