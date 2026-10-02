@@ -15,10 +15,10 @@
 <body>
   <main class="app-shell">
     <header class="hero">
-      <div class="brand">AIFACE // RETRO SCAN</div>
-      <h1>HOW DO I LOOK<br>ON CAMERA?</h1>
+      <div class="brand">AIFACE // 얼굴 분석</div>
+      <h1>내 사진 점수는<br>몇 점일까?</h1>
       <p class="subtitle">
-        얼굴 인상 점수 · 상위 % · 퍼스널 컬러를 8BIT 스타일로 분석합니다.
+        사진 점수 · 상위 % · 퍼스널 컬러 · 전신 스타일을 분석합니다.
       </p>
       <div class="privacy-chip">DB CONNECTED // PHOTO STORAGE ON</div>
       <div class="retro-strip">
@@ -30,7 +30,7 @@
 
     <section id="setupSection" class="panel">
       <div class="section-head">
-        <span class="step">01 // PROFILE</span>
+        <span class="step">01 // 기본 정보</span>
         <h2>기본 정보 입력</h2>
       </div>
 
@@ -56,15 +56,15 @@
       </div>
 
       <div class="section-head upload-head">
-        <span class="step">02 // UPLOAD</span>
+        <span class="step">02 // 사진 업로드</span>
         <h2>사진 업로드</h2>
       </div>
 
       <label class="dropzone" id="dropzone">
         <input id="fileInput" type="file" accept="image/*" multiple hidden />
         <div class="drop-icon">＋</div>
-        <strong>PHOTO SELECT</strong>
-        <span>MAX 5 FILES // JPG PNG WEBP</span>
+        <strong>사진 선택</strong>
+        <span>최대 5장 // JPG PNG WEBP</span>
       </label>
 
       <div id="previewGrid" class="preview-grid"></div>
@@ -74,7 +74,7 @@
         <span>입력 정보와 사진 저장에 동의합니다.</span>
       </label>
 
-      <button id="analyzeButton" class="primary" disabled>START SCAN</button>
+      <button id="analyzeButton" class="primary" disabled>분석 시작</button>
     </section>
 
     <section id="loadingSection" class="panel hidden">
@@ -89,7 +89,7 @@
     <section id="resultSection" class="hidden">
       <div class="panel result-hero">
         <div>
-          <div class="eyebrow">RESULT</div>
+          <div class="eyebrow">분석 결과</div>
           <h2 id="resultTitle">분석 결과</h2>
           <p id="resultMeta"></p>
         </div>
@@ -98,7 +98,7 @@
 
       <div class="result-grid">
         <article class="panel score-card">
-          <div class="card-label">FACE SCORE</div>
+          <div class="card-label">종합 사진 점수</div>
           <div class="score-line">
             <span id="mainScore" class="main-score">--</span>
             <span class="score-max">/ 100</span>
@@ -107,15 +107,28 @@
         </article>
 
         <article class="panel color-card">
-          <div class="card-label">PERSONAL COLOR</div>
+          <div class="card-label">퍼스널 컬러</div>
           <h3 id="personalColor">--</h3>
           <div id="colorSwatches" class="swatches"></div>
+        </article>
+
+        <article class="panel body-style-card">
+          <div class="card-label">전신 스타일 점수</div>
+          <div class="score-line compact-score">
+            <span id="bodyStyleScore" class="main-score">--</span>
+            <span class="score-max">/ 100</span>
+          </div>
+          <div class="body-style-tags">
+            <span id="poseScore">포즈 --</span>
+            <span id="outfitScore">코디 --</span>
+            <span id="balanceScore">사진 밸런스 --</span>
+          </div>
         </article>
       </div>
 
       <article class="panel">
         <div class="section-head">
-          <span class="step">03 // PHOTO SCORES</span>
+          <span class="step">03 // 사진별 점수</span>
           <h2>사진별 점수</h2>
         </div>
         <div id="photoResults" class="photo-results"></div>
@@ -123,7 +136,7 @@
     </section>
 
     <footer>
-      AIFACE 2026 // RETRO FACE SCAN
+      AIFACE 2026 // 사진 분석
     </footer>
   </main>
 

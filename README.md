@@ -48,3 +48,35 @@ Secret / service-role key는 브라우저 코드에 넣지 않습니다.
 ## 배포
 
 GitHub에 파일을 덮어쓴 뒤 Commit하면 연결된 Vercel이 자동 재배포합니다.
+
+## v6
+- Added full-body photo style scoring
+- Scores pose, outfit coordination, and overall photo balance
+- Does not score or rank body shape or physical body traits
+- Main interface labels are now mostly Korean
+
+
+## v7 - 전신 스타일 점수 DB 저장
+
+새 테이블 `style_scores`:
+
+- submission_id
+- total_score
+- pose_score
+- outfit_score
+- balance_score
+- created_at
+
+Supabase SQL Editor에서 `supabase-style-scores.sql` 내용을 한 번 실행해야 합니다.
+
+저장 흐름:
+
+```text
+submissions
+  ↓
+photos
+  ↓
+style_scores
+```
+
+`submission_id`로 한 사용자의 기본 정보, 사진, 전신 스타일 점수를 연결합니다.

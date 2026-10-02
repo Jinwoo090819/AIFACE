@@ -276,6 +276,20 @@ async function analyzeFile(file) {
   };
 }
 
+function getFullBodyStyleScores(results) {
+  const avgScore = results.reduce((sum, r) => sum + r.score, 0) / results.length;
+  const avgContrast = results.reduce((sum, r) => sum + r.contrast, 0) / results.length;
+  const avgEdge = results.reduce((sum, r) => sum + r.edge, 0) / results.length;
+  const avgBrightness = results.reduce((sum, r) => sum + r.brightness, 0) / results.length;
+
+  const pose = Math.round(clamp(avgScore * 0.78 + avgEdge * 120, 45, 98));
+  const outfit = Math.round(clamp(avgScore * 0.72 + avgContrast * 90, 45, 98));
+  const balance = Math.round(clamp(avgScore * 0.74 + (1 - Math.abs(avgBrightness - 0.56)) * 20, 45, 98));
+  const total = Math.round((pose + outfit + balance) / 3);
+
+  return { total, pose, outfit, balance };
+}
+
 function percentileFromScore(score) {
   if (score >= 95) return 1;
   if (score >= 90) return 5;
@@ -368,6 +382,22 @@ async function saveToDatabase(results) {
     }
   }
 
+  const bodyStyle = getFullBodyStyleScores(results);
+
+  const { error: styleError } = await db
+    .from("style_scores")
+    .insert({
+      submission_id: submissionId,
+      total_score: bodyStyle.total,
+      pose_score: bodyStyle.pose,
+      outfit_score: bodyStyle.outfit,
+      balance_score: bodyStyle.balance
+    });
+
+  if (styleError) {
+    throw new Error("전신 스타일 점수 저장 실패: " + styleError.message);
+  }
+
   return submissionId;
 }
 
@@ -427,6 +457,12 @@ function renderResults(results) {
   document.getElementById("percentileBadge").textContent = `사이트 기준 상위 ${percentile}%`;
 
   document.getElementById("personalColor").textContent = color.type;
+
+  const bodyStyle = getFullBodyStyleScores(results);
+  document.getElementById("bodyStyleScore").textContent = bodyStyle.total;
+  document.getElementById("poseScore").textContent = `포즈 ${bodyStyle.pose}`;
+  document.getElementById("outfitScore").textContent = `코디 ${bodyStyle.outfit}`;
+  document.getElementById("balanceScore").textContent = `사진 밸런스 ${bodyStyle.balance}`;
 
   const swatches = document.getElementById("colorSwatches");
   swatches.innerHTML = "";

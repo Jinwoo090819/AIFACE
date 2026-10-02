@@ -203,3 +203,25 @@ footer{text-align:center;font-family:'Press Start 2P','Noto Sans KR',sans-serif;
   height:22px;
   accent-color:var(--yellow);
 }
+
+.result-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.body-style-card{min-height:260px}
+.compact-score .main-score{font-size:64px}
+.body-style-tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:18px;
+}
+.body-style-tags span{
+  border:3px solid var(--ink);
+  background:#fff;
+  padding:8px 10px;
+  font-weight:900;
+  font-size:12px;
+}
+@media(max-width:900px){
+  .result-grid{grid-template-columns:1fr}
+}
