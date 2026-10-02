@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#111827" />
+  <title>PHOTO CHECK — 사진 분석</title>
+  <meta name="description" content="사진 완성도와 퍼스널 컬러를 간단히 분석하는 비상업용 데모" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div class="brand">PHOTO CHECK</div>
+      <h1>내 사진, 얼마나 잘 나왔을까?</h1>
+      <p class="subtitle">
+        사진 완성도 · 사이트 기준 상위 % · 퍼스널 컬러를 간단히 분석합니다.
+      </p>
+      <div class="privacy-chip">사진은 서버로 전송되지 않고 브라우저에서만 분석됩니다.</div>
+    </header>
+
+    <section id="setupSection" class="panel">
+      <div class="section-head">
+        <span class="step">STEP 1</span>
+        <h2>기본 정보</h2>
+      </div>
+
+      <div class="grid two">
+        <label class="field">
+          <span>이름 / 닉네임</span>
+          <input id="nameInput" maxlength="20" placeholder="예: 다트" autocomplete="nickname" />
+        </label>
+        <label class="field">
+          <span>나이</span>
+          <input id="ageInput" type="number" min="1" max="120" placeholder="예: 17" inputmode="numeric" />
+        </label>
+      </div>
+
+      <div class="section-head upload-head">
+        <span class="step">STEP 2</span>
+        <h2>사진 업로드</h2>
+      </div>
+
+      <label class="dropzone" id="dropzone">
+        <input id="fileInput" type="file" accept="image/*" multiple hidden />
+        <div class="drop-icon">＋</div>
+        <strong>사진 선택</strong>
+        <span>최대 5장 · JPG / PNG / WEBP</span>
+      </label>
+
+      <div id="previewGrid" class="preview-grid"></div>
+
+      <div class="notice">
+        <strong>분석 기준</strong>
+        <p>
+          이 데모는 얼굴의 우열이나 외모를 평가하지 않습니다. 조명, 선명도, 대비,
+          색감 등 <b>사진 자체의 완성도</b>를 분석합니다.
+        </p>
+      </div>
+
+      <button id="analyzeButton" class="primary" disabled>사진 분석하기</button>
+    </section>
+
+    <section id="loadingSection" class="panel hidden">
+      <div class="loading-wrap">
+        <div class="spinner"></div>
+        <h2>사진을 분석하고 있어요</h2>
+        <p id="loadingText">밝기와 대비를 확인하는 중...</p>
+        <div class="progress"><div id="progressBar"></div></div>
+      </div>
+    </section>
+
+    <section id="resultSection" class="hidden">
+      <div class="panel result-hero">
+        <div>
+          <div class="eyebrow">ANALYSIS RESULT</div>
+          <h2 id="resultTitle">분석 결과</h2>
+          <p id="resultMeta"></p>
+        </div>
+        <button id="restartButton" class="ghost">다시 분석</button>
+      </div>
+
+      <div class="result-grid">
+        <article class="panel score-card">
+          <div class="card-label">대표 사진 완성도</div>
+          <div class="score-line">
+            <span id="mainScore" class="main-score">--</span>
+            <span class="score-max">/ 100</span>
+          </div>
+          <div id="percentileBadge" class="percentile-badge">사이트 기준 상위 --%</div>
+          <p class="muted small">
+            상위 %는 실제 인구 통계가 아니라 이 사이트의 사진 점수 구간표에 따른
+            엔터테인먼트용 표시입니다.
+          </p>
+        </article>
+
+        <article class="panel color-card">
+          <div class="card-label">간이 퍼스널 컬러 추정</div>
+          <h3 id="personalColor">--</h3>
+          <div id="colorSwatches" class="swatches"></div>
+          <p id="colorNote" class="muted"></p>
+        </article>
+      </div>
+
+      <article class="panel">
+        <div class="section-head">
+          <span class="step">PHOTO BREAKDOWN</span>
+          <h2>사진별 분석</h2>
+        </div>
+        <div id="photoResults" class="photo-results"></div>
+      </article>
+
+      <article class="panel">
+        <div class="section-head">
+          <span class="step">TIPS</span>
+          <h2>개선 팁</h2>
+        </div>
+        <ul id="tipsList" class="tips-list"></ul>
+      </article>
+    </section>
+
+    <footer>
+      비상업용 데모 · 분석 결과는 촬영 환경에 따라 달라질 수 있습니다.
+    </footer>
+  </main>
+
+  <canvas id="analysisCanvas" hidden></canvas>
+  <script src="./app.js"></script>
+</body>
+</html>
