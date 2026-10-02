@@ -1,6 +1,7 @@
 const fileInput = document.getElementById("fileInput");
 const previewGrid = document.getElementById("previewGrid");
-const analyzeButton = document.getElementById("analyzeButton");
+const faceAnalyzeButton = document.getElementById("faceAnalyzeButton");
+const styleAnalyzeButton = document.getElementById("styleAnalyzeButton");
 const nameInput = document.getElementById("nameInput");
 const ageInput = document.getElementById("ageInput");
 const genderInput = document.getElementById("genderInput");
@@ -8,6 +9,8 @@ const setupSection = document.getElementById("setupSection");
 const loadingSection = document.getElementById("loadingSection");
 const resultSection = document.getElementById("resultSection");
 const restartButton = document.getElementById("restartButton");
+const styleResultSection = document.getElementById("styleResultSection");
+const styleRestartButton = document.getElementById("styleRestartButton");
 const dropzone = document.getElementById("dropzone");
 const canvas = document.getElementById("analysisCanvas");
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -34,7 +37,9 @@ function updateAnalyzeState() {
   const hasAge = Number(ageInput.value) > 0;
   const hasGender = genderInput.value.length > 0;
   const hasConsent = saveConsent.checked;
-  analyzeButton.disabled = !(hasName && hasAge && hasGender && hasConsent && files.length > 0);
+  const ready = hasName && hasAge && hasGender && hasConsent && files.length > 0;
+  faceAnalyzeButton.disabled = !ready;
+  styleAnalyzeButton.disabled = !ready;
 }
 
 nameInput.addEventListener("input", updateAnalyzeState);
@@ -333,7 +338,7 @@ function getFileExtension(file) {
   return byMime || "jpg";
 }
 
-async function saveToDatabase(results) {
+async function saveToDatabase(results, saveStyleScore = false) {
   const submissionId = crypto.randomUUID();
   const name = nameInput.value.trim();
   const age = Number(ageInput.value);
@@ -382,30 +387,33 @@ async function saveToDatabase(results) {
     }
   }
 
-  const bodyStyle = getFullBodyStyleScores(results);
+  if (saveStyleScore) {
+    const bodyStyle = getFullBodyStyleScores(results);
 
-  const { error: styleError } = await db
-    .from("style_scores")
-    .insert({
-      submission_id: submissionId,
-      total_score: bodyStyle.total,
-      pose_score: bodyStyle.pose,
-      outfit_score: bodyStyle.outfit,
-      balance_score: bodyStyle.balance
-    });
+    const { error: styleError } = await db
+      .from("style_scores")
+      .insert({
+        submission_id: submissionId,
+        total_score: bodyStyle.total,
+        pose_score: bodyStyle.pose,
+        outfit_score: bodyStyle.outfit,
+        balance_score: bodyStyle.balance
+      });
 
-  if (styleError) {
-    throw new Error("전신 스타일 점수 저장 실패: " + styleError.message);
+    if (styleError) {
+      throw new Error("전신 스타일 점수 저장 실패: " + styleError.message);
+    }
   }
 
   return submissionId;
 }
 
-async function runAnalysis() {
-  if (analyzeButton.disabled) return;
+async function runFaceAnalysis() {
+  if (faceAnalyzeButton.disabled) return;
 
   setupSection.classList.add("hidden");
   resultSection.classList.add("hidden");
+  styleResultSection.classList.add("hidden");
   loadingSection.classList.remove("hidden");
 
   const loadingText = document.getElementById("loadingText");
@@ -422,7 +430,7 @@ async function runAnalysis() {
 
     loadingText.textContent = "사진 저장 중";
     progressBar.style.width = "75%";
-    await saveToDatabase(results);
+    await saveToDatabase(results, false);
 
     progressBar.style.width = "100%";
     renderResults(results);
@@ -437,6 +445,76 @@ async function runAnalysis() {
     setupSection.classList.remove("hidden");
     alert("저장 중 오류가 발생했습니다.\n" + error.message);
   }
+}
+
+async function runStyleAnalysis() {
+  if (styleAnalyzeButton.disabled) return;
+
+  setupSection.classList.add("hidden");
+  resultSection.classList.add("hidden");
+  styleResultSection.classList.add("hidden");
+  loadingSection.classList.remove("hidden");
+
+  const loadingText = document.getElementById("loadingText");
+  const progressBar = document.getElementById("progressBar");
+
+  try {
+    const results = [];
+
+    for (let i = 0; i < files.length; i++) {
+      loadingText.textContent = `전신 스타일 분석 중 ${i + 1}/${files.length}`;
+      progressBar.style.width = `${Math.round((i / files.length) * 65)}%`;
+      results.push(await analyzeFile(files[i]));
+    }
+
+    loadingText.textContent = "결과 저장 중";
+    progressBar.style.width = "75%";
+    await saveToDatabase(results, true);
+
+    progressBar.style.width = "100%";
+    renderStyleResults(results);
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+    loadingSection.classList.add("hidden");
+    styleResultSection.classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (error) {
+    console.error(error);
+    loadingSection.classList.add("hidden");
+    setupSection.classList.remove("hidden");
+    alert("저장 중 오류가 발생했습니다.\n" + error.message);
+  }
+}
+
+function renderStyleResults(results) {
+  const name = nameInput.value.trim();
+  const age = Number(ageInput.value);
+  const gender = genderInput.value;
+  const bodyStyle = getFullBodyStyleScores(results);
+
+  document.getElementById("styleResultTitle").textContent = `${name}님의 전신 스타일`;
+  document.getElementById("styleResultMeta").textContent = `${age}세 · ${gender} · ${results.length}장 분석 완료`;
+
+  document.getElementById("bodyStyleScore").textContent = bodyStyle.total;
+  document.getElementById("poseScore").textContent = `포즈 ${bodyStyle.pose}`;
+  document.getElementById("outfitScore").textContent = `코디 ${bodyStyle.outfit}`;
+  document.getElementById("balanceScore").textContent = `사진 밸런스 ${bodyStyle.balance}`;
+
+  const stylePhotoResults = document.getElementById("stylePhotoResults");
+  stylePhotoResults.innerHTML = "";
+
+  results.forEach((r, index) => {
+    const row = document.createElement("div");
+    row.className = "photo-result";
+    row.innerHTML = `
+      <img src="${r.previewUrl}" alt="전신 스타일 분석 사진 ${index + 1}">
+      <div>
+        <h3>${index + 1}번 사진</h3>
+      </div>
+      <div class="photo-score">${r.score}</div>
+    `;
+    stylePhotoResults.appendChild(row);
+  });
 }
 
 function renderResults(results) {
@@ -458,11 +536,6 @@ function renderResults(results) {
 
   document.getElementById("personalColor").textContent = color.type;
 
-  const bodyStyle = getFullBodyStyleScores(results);
-  document.getElementById("bodyStyleScore").textContent = bodyStyle.total;
-  document.getElementById("poseScore").textContent = `포즈 ${bodyStyle.pose}`;
-  document.getElementById("outfitScore").textContent = `코디 ${bodyStyle.outfit}`;
-  document.getElementById("balanceScore").textContent = `사진 밸런스 ${bodyStyle.balance}`;
 
   const swatches = document.getElementById("colorSwatches");
   swatches.innerHTML = "";
@@ -496,10 +569,17 @@ function renderResults(results) {
 
 }
 
-analyzeButton.addEventListener("click", runAnalysis);
+faceAnalyzeButton.addEventListener("click", runFaceAnalysis);
+styleAnalyzeButton.addEventListener("click", runStyleAnalysis);
 
 restartButton.addEventListener("click", () => {
   resultSection.classList.add("hidden");
+  setupSection.classList.remove("hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+styleRestartButton.addEventListener("click", () => {
+  styleResultSection.classList.add("hidden");
   setupSection.classList.remove("hidden");
   window.scrollTo({ top: 0, behavior: "smooth" });
 });

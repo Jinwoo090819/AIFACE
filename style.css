@@ -225,3 +225,35 @@ footer{text-align:center;font-family:'Press Start 2P','Noto Sans KR',sans-serif;
 @media(max-width:900px){
   .result-grid{grid-template-columns:1fr}
 }
+
+.mode-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-top:18px;
+}
+.mode-actions .primary{margin-top:0}
+.secondary-action{
+  background:var(--blue);
+}
+.style-result-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+}
+.large-tags{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  margin-top:22px;
+}
+.large-tags span{
+  font-size:14px;
+  padding:14px 12px;
+}
+@media(max-width:720px){
+  .mode-actions,
+  .style-result-grid{
+    grid-template-columns:1fr;
+  }
+}

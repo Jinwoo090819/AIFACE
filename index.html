@@ -74,7 +74,10 @@
         <span>입력 정보와 사진 저장에 동의합니다.</span>
       </label>
 
-      <button id="analyzeButton" class="primary" disabled>분석 시작</button>
+      <div class="mode-actions">
+        <button id="faceAnalyzeButton" class="primary" disabled>얼굴 / 사진 분석</button>
+        <button id="styleAnalyzeButton" class="primary secondary-action" disabled>전신 스타일 분석</button>
+      </div>
     </section>
 
     <section id="loadingSection" class="panel hidden">
@@ -111,14 +114,39 @@
           <h3 id="personalColor">--</h3>
           <div id="colorSwatches" class="swatches"></div>
         </article>
+      </div>
 
+      <article class="panel">
+        <div class="section-head">
+          <span class="step">03 // 사진별 점수</span>
+          <h2>사진별 점수</h2>
+        </div>
+        <div id="photoResults" class="photo-results"></div>
+      </article>
+    </section>
+
+    <section id="styleResultSection" class="hidden">
+      <div class="panel result-hero">
+        <div>
+          <div class="eyebrow">전신 스타일 분석 결과</div>
+          <h2 id="styleResultTitle">전신 스타일 분석</h2>
+          <p id="styleResultMeta"></p>
+        </div>
+        <button id="styleRestartButton" class="ghost">다시 분석</button>
+      </div>
+
+      <div class="style-result-grid">
         <article class="panel body-style-card">
           <div class="card-label">전신 스타일 점수</div>
           <div class="score-line compact-score">
             <span id="bodyStyleScore" class="main-score">--</span>
             <span class="score-max">/ 100</span>
           </div>
-          <div class="body-style-tags">
+        </article>
+
+        <article class="panel">
+          <div class="card-label">세부 점수</div>
+          <div class="body-style-tags large-tags">
             <span id="poseScore">포즈 --</span>
             <span id="outfitScore">코디 --</span>
             <span id="balanceScore">사진 밸런스 --</span>
@@ -128,10 +156,10 @@
 
       <article class="panel">
         <div class="section-head">
-          <span class="step">03 // 사진별 점수</span>
-          <h2>사진별 점수</h2>
+          <span class="step">전신 사진</span>
+          <h2>업로드한 사진</h2>
         </div>
-        <div id="photoResults" class="photo-results"></div>
+        <div id="stylePhotoResults" class="photo-results"></div>
       </article>
     </section>
 
