@@ -11,6 +11,11 @@ const restartButton = document.getElementById("restartButton");
 const dropzone = document.getElementById("dropzone");
 const canvas = document.getElementById("analysisCanvas");
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
+const saveConsent = document.getElementById("saveConsent");
+
+const SUPABASE_URL = "https://gdxkntjlrpbzvibpzvpx.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_GJWYshkJ3jDRwL1gN65_ng_rYOr-suI";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 const MAX_FILES = 5;
 let files = [];
@@ -28,12 +33,14 @@ function updateAnalyzeState() {
   const hasName = nameInput.value.trim().length > 0;
   const hasAge = Number(ageInput.value) > 0;
   const hasGender = genderInput.value.length > 0;
-  analyzeButton.disabled = !(hasName && hasAge && hasGender && files.length > 0);
+  const hasConsent = saveConsent.checked;
+  analyzeButton.disabled = !(hasName && hasAge && hasGender && hasConsent && files.length > 0);
 }
 
 nameInput.addEventListener("input", updateAnalyzeState);
 ageInput.addEventListener("input", updateAnalyzeState);
 genderInput.addEventListener("change", updateAnalyzeState);
+saveConsent.addEventListener("change", updateAnalyzeState);
 
 fileInput.addEventListener("change", (e) => {
   addFiles([...e.target.files]);
@@ -188,7 +195,7 @@ function analyzeImageData(data, width, height) {
   const saturation = count ? satSum / count : 0;
   const edge = edgeCount ? edgeSum / edgeCount : 0;
 
-  // 중앙 영역: 피부/얼굴에 가까운 색 추정을 위한 아주 거친 샘플
+  // 중앙 영역 색상 샘플
   const x0 = Math.floor(width * 0.28);
   const x1 = Math.floor(width * 0.72);
   const y0 = Math.floor(height * 0.20);
@@ -219,7 +226,7 @@ function analyzeImageData(data, width, height) {
   const avgB = centerCount ? bSum / centerCount : 127;
   const centerHsv = rgbToHsv(avgR, avgG, avgB);
 
-  // 사진 품질용 점수: 촬영 조건에 대한 휴리스틱
+  // 점수 계산
   const brightnessPenalty = Math.abs(brightness - 0.56) * 65;
   const contrastScore = clamp((contrast - 0.06) / 0.22, 0, 1) * 18;
   const edgeScore = clamp((edge - 0.018) / 0.11, 0, 1) * 18;
@@ -287,84 +294,81 @@ function getPersonalColor(results) {
   const avgB = results.reduce((s, x) => s + x.avgB, 0) / results.length;
   const hsv = rgbToHsv(avgR, avgG, avgB);
 
-  // 조명 영향을 크게 받는 매우 단순한 휴리스틱
   const warmth = (avgR - avgB) + (avgG - avgB) * 0.25;
   const isWarm = warmth > 11;
   const isLight = hsv.v > 0.60;
   const isClear = hsv.s > 0.23;
 
-  let type, colors, note;
-
   if (isWarm && (isLight || isClear)) {
-    type = "봄 웜 계열";
-    colors = ["#FFD6A5", "#FFADAD", "#FDFFB6", "#CAFFBF"];
-    note = "맑고 따뜻한 색감이 비교적 잘 맞는 쪽으로 추정됩니다.";
-  } else if (isWarm) {
-    type = "가을 웜 계열";
-    colors = ["#C97B63", "#D4A373", "#A98467", "#6B705C"];
-    note = "차분하고 깊은 웜톤 색감이 비교적 잘 맞는 쪽으로 추정됩니다.";
-  } else if (!isWarm && isLight) {
-    type = "여름 쿨 계열";
-    colors = ["#CDB4DB", "#A2D2FF", "#BDE0FE", "#FFC8DD"];
-    note = "부드럽고 밝은 쿨톤 색감이 비교적 잘 맞는 쪽으로 추정됩니다.";
-  } else {
-    type = "겨울 쿨 계열";
-    colors = ["#3A0CA3", "#4361EE", "#7209B7", "#F72585"];
-    note = "선명하고 대비가 있는 쿨톤 색감이 비교적 잘 맞는 쪽으로 추정됩니다.";
+    return { type: "봄 웜", colors: ["#FFD6A5", "#FFADAD", "#FDFFB6", "#CAFFBF"] };
   }
-
-  // 여러 장 사이 색온도 일관성으로 신뢰도 추정
-  const warmSigns = results.map(r => ((r.avgR - r.avgB) + (r.avgG - r.avgB) * 0.25) > 11);
-  const same = warmSigns.filter(x => x === warmSigns[0]).length / warmSigns.length;
-  const confidence = results.length === 1 ? "낮음" : same >= 0.8 ? "보통" : "낮음";
-
-  return { type, colors, note, confidence };
+  if (isWarm) {
+    return { type: "가을 웜", colors: ["#C97B63", "#D4A373", "#A98467", "#6B705C"] };
+  }
+  if (isLight) {
+    return { type: "여름 쿨", colors: ["#CDB4DB", "#A2D2FF", "#BDE0FE", "#FFC8DD"] };
+  }
+  return { type: "겨울 쿨", colors: ["#3A0CA3", "#4361EE", "#7209B7", "#F72585"] };
 }
 
-function metricLabelBrightness(v) {
-  if (v < 0.38) return "어두움";
-  if (v > 0.72) return "밝음";
-  return "적정";
+
+function getFileExtension(file) {
+  const byName = (file.name.split(".").pop() || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (byName) return byName;
+  const byMime = (file.type.split("/")[1] || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return byMime || "jpg";
 }
 
-function metricLabelContrast(v) {
-  if (v < 0.10) return "낮음";
-  if (v > 0.25) return "높음";
-  return "적정";
-}
+async function saveToDatabase(results) {
+  const submissionId = crypto.randomUUID();
+  const name = nameInput.value.trim();
+  const age = Number(ageInput.value);
+  const gender = genderInput.value;
 
-function metricLabelSharpness(v) {
-  if (v < 0.035) return "낮음";
-  if (v > 0.09) return "높음";
-  return "보통";
-}
+  const { error: submissionError } = await db
+    .from("submissions")
+    .insert({
+      id: submissionId,
+      name,
+      age,
+      gender
+    });
 
-function buildTips(best, color) {
-  const tips = [];
-
-  if (best.brightness < 0.42) {
-    tips.push("사진이 다소 어둡게 분석됐습니다. 창가나 밝은 실내처럼 얼굴에 빛이 고르게 들어오는 곳에서 촬영해보세요.");
-  } else if (best.brightness > 0.72) {
-    tips.push("사진이 매우 밝게 분석됐습니다. 강한 직사광선보다 부드러운 자연광에서 촬영하면 디테일이 더 잘 남습니다.");
-  } else {
-    tips.push("대표 사진의 밝기는 비교적 안정적입니다. 지금과 비슷한 조명 조건을 유지해도 좋습니다.");
+  if (submissionError) {
+    throw new Error("기본 정보 저장 실패: " + submissionError.message);
   }
 
-  if (best.contrast < 0.11) {
-    tips.push("대비가 낮아 사진이 평평해 보일 수 있습니다. 배경과 옷 색을 조금 분리하면 사진이 더 또렷해집니다.");
-  } else {
-    tips.push("배경을 단순하게 정리하면 인물과 사진 전체의 시선 집중도가 더 좋아질 수 있습니다.");
+  for (let i = 0; i < results.length; i++) {
+    const item = results[i];
+    const ext = getFileExtension(item.file);
+    const storagePath = `${submissionId}/${String(i + 1).padStart(2, "0")}-${crypto.randomUUID()}.${ext}`;
+
+    const { error: uploadError } = await db.storage
+      .from("faces")
+      .upload(storagePath, item.file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: item.file.type || undefined
+      });
+
+    if (uploadError) {
+      throw new Error("사진 저장 실패: " + uploadError.message);
+    }
+
+    const { error: photoError } = await db
+      .from("photos")
+      .insert({
+        submission_id: submissionId,
+        storage_path: storagePath,
+        score: item.score
+      });
+
+    if (photoError) {
+      throw new Error("사진 기록 저장 실패: " + photoError.message);
+    }
   }
 
-  if (best.edge < 0.045) {
-    tips.push("선명도가 낮게 감지됐습니다. 렌즈를 닦고 흔들림을 줄이거나 조금 더 밝은 환경에서 촬영해보세요.");
-  } else {
-    tips.push("선명도는 무난합니다. 과한 필터나 뷰티 효과를 줄이면 퍼스널 컬러 추정도 더 안정적입니다.");
-  }
-
-  tips.push(`${color.type} 추정은 조명과 카메라 화이트밸런스 영향을 크게 받습니다. 자연광 정면 사진 여러 장을 사용하면 결과가 더 안정적입니다.`);
-
-  return tips;
+  return submissionId;
 }
 
 async function runAnalysis() {
@@ -376,29 +380,33 @@ async function runAnalysis() {
 
   const loadingText = document.getElementById("loadingText");
   const progressBar = document.getElementById("progressBar");
-  const messages = [
-    "밝기와 대비를 확인하는 중...",
-    "선명도와 색감을 비교하는 중...",
-    "사진별 점수를 계산하는 중...",
-    "퍼스널 컬러를 간이 추정하는 중..."
-  ];
 
-  const results = [];
-  for (let i = 0; i < files.length; i++) {
-    loadingText.textContent = messages[Math.min(i, messages.length - 1)];
-    progressBar.style.width = `${Math.round((i / files.length) * 80)}%`;
-    results.push(await analyzeFile(files[i]));
+  try {
+    const results = [];
+
+    for (let i = 0; i < files.length; i++) {
+      loadingText.textContent = `사진 분석 중 ${i + 1}/${files.length}`;
+      progressBar.style.width = `${Math.round((i / files.length) * 65)}%`;
+      results.push(await analyzeFile(files[i]));
+    }
+
+    loadingText.textContent = "사진 저장 중";
+    progressBar.style.width = "75%";
+    await saveToDatabase(results);
+
+    progressBar.style.width = "100%";
+    renderResults(results);
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+    loadingSection.classList.add("hidden");
+    resultSection.classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (error) {
+    console.error(error);
+    loadingSection.classList.add("hidden");
+    setupSection.classList.remove("hidden");
+    alert("저장 중 오류가 발생했습니다.\n" + error.message);
   }
-
-  await new Promise(resolve => setTimeout(resolve, 450));
-  progressBar.style.width = "100%";
-
-  renderResults(results);
-
-  await new Promise(resolve => setTimeout(resolve, 250));
-  loadingSection.classList.add("hidden");
-  resultSection.classList.remove("hidden");
-  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function renderResults(results) {
@@ -418,9 +426,7 @@ function renderResults(results) {
   document.getElementById("mainScore").textContent = representative;
   document.getElementById("percentileBadge").textContent = `사이트 기준 상위 ${percentile}%`;
 
-  document.getElementById("personalColor").textContent = `${color.type} · 신뢰도 ${color.confidence}`;
-  document.getElementById("colorNote").textContent =
-    `${color.note} (간이 추정이며 실제 진단을 대신하지 않습니다.)`;
+  document.getElementById("personalColor").textContent = color.type;
 
   const swatches = document.getElementById("colorSwatches");
   swatches.innerHTML = "";
@@ -444,27 +450,14 @@ function renderResults(results) {
       <div>
         <h3>
           ${index + 1}번 사진
-          ${isBest ? '<span class="best-tag">BEST PHOTO</span>' : ''}
+          ${isBest ? '<span class="best-tag">BEST</span>' : ''}
         </h3>
-        <div class="metric-row">
-          <span class="metric">밝기 ${metricLabelBrightness(r.brightness)}</span>
-          <span class="metric">대비 ${metricLabelContrast(r.contrast)}</span>
-          <span class="metric">선명도 ${metricLabelSharpness(r.edge)}</span>
-          <span class="metric">${r.width}×${r.height}</span>
-        </div>
       </div>
       <div class="photo-score">${r.score}</div>
     `;
     photoResults.appendChild(row);
   });
 
-  const tipsList = document.getElementById("tipsList");
-  tipsList.innerHTML = "";
-  buildTips(best, color).forEach(tip => {
-    const li = document.createElement("li");
-    li.textContent = tip;
-    tipsList.appendChild(li);
-  });
 }
 
 analyzeButton.addEventListener("click", runAnalysis);

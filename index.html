@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f4c43f" />
   <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   <title>AIFACE — Visual Scan</title>
-  <meta name="description" content="얼굴 인상 점수와 퍼스널 컬러를 분석하는 비상업용 레트로 데모" />
+  <meta name="description" content="얼굴 점수와 퍼스널 컬러를 분석하는 레트로 스타일 AIFACE" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -20,11 +20,11 @@
       <p class="subtitle">
         얼굴 인상 점수 · 상위 % · 퍼스널 컬러를 8BIT 스타일로 분석합니다.
       </p>
-      <div class="privacy-chip">LOCAL MODE // 사진은 브라우저에서만 처리됩니다.</div>
+      <div class="privacy-chip">DB CONNECTED // PHOTO STORAGE ON</div>
       <div class="retro-strip">
         <span>FACE / STYLE / COLOR</span>
         <span>EST. 2026</span>
-        <span>NO CLOUD STORAGE</span>
+        <span>PRIVATE STORAGE</span>
       </div>
     </header>
 
@@ -69,6 +69,11 @@
 
       <div id="previewGrid" class="preview-grid"></div>
 
+      <label class="consent-row">
+        <input id="saveConsent" type="checkbox" />
+        <span>입력 정보와 사진 저장에 동의합니다.</span>
+      </label>
+
       <button id="analyzeButton" class="primary" disabled>START SCAN</button>
     </section>
 
@@ -99,33 +104,21 @@
             <span class="score-max">/ 100</span>
           </div>
           <div id="percentileBadge" class="percentile-badge">사이트 기준 상위 --%</div>
-          <p class="muted small">
-            상위 %는 실제 인구 외모 통계가 아니라 이 사이트의 비주얼 인상 점수 구간표에 따른 엔터테인먼트용 표시입니다.
-          </p>
         </article>
 
         <article class="panel color-card">
           <div class="card-label">PERSONAL COLOR</div>
           <h3 id="personalColor">--</h3>
           <div id="colorSwatches" class="swatches"></div>
-          <p id="colorNote" class="muted"></p>
         </article>
       </div>
 
       <article class="panel">
         <div class="section-head">
-          <span class="step">03 // PHOTO BREAKDOWN</span>
-          <h2>사진별 결과</h2>
+          <span class="step">03 // PHOTO SCORES</span>
+          <h2>사진별 점수</h2>
         </div>
         <div id="photoResults" class="photo-results"></div>
-      </article>
-
-      <article class="panel">
-        <div class="section-head">
-          <span class="step">04 // STYLE TIPS</span>
-          <h2>스타일 팁</h2>
-        </div>
-        <ul id="tipsList" class="tips-list"></ul>
       </article>
     </section>
 
@@ -135,6 +128,7 @@
   </main>
 
   <canvas id="analysisCanvas" hidden></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./app.js"></script>
 </body>
 </html>
