@@ -1,4 +1,4 @@
-# PHOTO CHECK MVP
+# AIFACE RETRO MVP
 
 비상업용 사진 분석 사이트의 정적 MVP입니다.
 
@@ -76,3 +76,17 @@ photo-score-mvp/
 
 실제 AI 분석을 붙이고 싶다면 `app.js`의 `analyzeFile()` 또는 `renderResults()`
 부분을 API 호출 방식으로 교체하면 됩니다.
+
+
+## Retro redesign
+- Off-white paper background
+- Heavy black borders and offset shadows
+- Yellow / red / blue accents
+- Monospace / poster-style typography
+- Visual impression score framing instead of inherent attractiveness ranking
+
+## v2 changes
+- Added custom AIFACE retro favicon
+- Added gender field to profile
+- Gender is displayed in result metadata
+- Gender does not change the visual-impression score

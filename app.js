@@ -3,6 +3,7 @@ const previewGrid = document.getElementById("previewGrid");
 const analyzeButton = document.getElementById("analyzeButton");
 const nameInput = document.getElementById("nameInput");
 const ageInput = document.getElementById("ageInput");
+const genderInput = document.getElementById("genderInput");
 const setupSection = document.getElementById("setupSection");
 const loadingSection = document.getElementById("loadingSection");
 const resultSection = document.getElementById("resultSection");
@@ -26,11 +27,13 @@ function round(n) {
 function updateAnalyzeState() {
   const hasName = nameInput.value.trim().length > 0;
   const hasAge = Number(ageInput.value) > 0;
-  analyzeButton.disabled = !(hasName && hasAge && files.length > 0);
+  const hasGender = genderInput.value.length > 0;
+  analyzeButton.disabled = !(hasName && hasAge && hasGender && files.length > 0);
 }
 
 nameInput.addEventListener("input", updateAnalyzeState);
 ageInput.addEventListener("input", updateAnalyzeState);
+genderInput.addEventListener("change", updateAnalyzeState);
 
 fileInput.addEventListener("change", (e) => {
   addFiles([...e.target.files]);
@@ -401,6 +404,7 @@ async function runAnalysis() {
 function renderResults(results) {
   const name = nameInput.value.trim();
   const age = Number(ageInput.value);
+  const gender = genderInput.value;
 
   const sorted = [...results].sort((a, b) => b.score - a.score);
   const best = sorted[0];
@@ -409,10 +413,10 @@ function renderResults(results) {
   const percentile = percentileFromScore(representative);
   const color = getPersonalColor(results);
 
-  document.getElementById("resultTitle").textContent = `${name}님의 사진 분석`;
-  document.getElementById("resultMeta").textContent = `${age}세 · ${results.length}장 분석 완료`;
+  document.getElementById("resultTitle").textContent = `${name} // VISUAL SCAN`;
+  document.getElementById("resultMeta").textContent = `${age}세 · ${gender} · ${results.length}장 분석 완료`;
   document.getElementById("mainScore").textContent = representative;
-  document.getElementById("percentileBadge").textContent = `사이트 사진 완성도 기준 상위 ${percentile}%`;
+  document.getElementById("percentileBadge").textContent = `사이트 비주얼 인상 기준 상위 ${percentile}%`;
 
   document.getElementById("personalColor").textContent = `${color.type} · 신뢰도 ${color.confidence}`;
   document.getElementById("colorNote").textContent =
