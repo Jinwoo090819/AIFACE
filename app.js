@@ -14,7 +14,6 @@ const styleRestartButton = document.getElementById("styleRestartButton");
 const dropzone = document.getElementById("dropzone");
 const canvas = document.getElementById("analysisCanvas");
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
-const saveConsent = document.getElementById("saveConsent");
 
 const SUPABASE_URL = "https://gdxkntjlrpbzvibpzvpx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_GJWYshkJ3jDRwL1gN65_ng_rYOr-suI";
@@ -36,7 +35,7 @@ function updateAnalyzeState() {
   const hasName = nameInput.value.trim().length > 0;
   const hasAge = Number(ageInput.value) > 0;
   const hasGender = genderInput.value.length > 0;
-  const hasConsent = saveConsent.checked;
+  const hasConsent = true;
   const ready = hasName && hasAge && hasGender && hasConsent && files.length > 0;
   faceAnalyzeButton.disabled = !ready;
   styleAnalyzeButton.disabled = !ready;
@@ -45,7 +44,6 @@ function updateAnalyzeState() {
 nameInput.addEventListener("input", updateAnalyzeState);
 ageInput.addEventListener("input", updateAnalyzeState);
 genderInput.addEventListener("change", updateAnalyzeState);
-saveConsent.addEventListener("change", updateAnalyzeState);
 
 fileInput.addEventListener("change", (e) => {
   addFiles([...e.target.files]);
