@@ -421,12 +421,12 @@ async function runFaceAnalysis() {
     const results = [];
 
     for (let i = 0; i < files.length; i++) {
-      loadingText.textContent = `사진 분석 중 ${i + 1}/${files.length}`;
+      loadingText.textContent = `사진 불러오는 중 ${i + 1}/${files.length}`;
       progressBar.style.width = `${Math.round((i / files.length) * 65)}%`;
       results.push(await analyzeFile(files[i]));
     }
 
-    loadingText.textContent = "사진 저장 중";
+    loadingText.textContent = "사진 분석 중";
     progressBar.style.width = "75%";
     await saveToDatabase(results, false);
 
@@ -465,7 +465,7 @@ async function runStyleAnalysis() {
       results.push(await analyzeFile(files[i]));
     }
 
-    loadingText.textContent = "결과 저장 중";
+    loadingText.textContent = "결과 내보내는 중";
     progressBar.style.width = "75%";
     await saveToDatabase(results, true);
 
