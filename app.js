@@ -18,7 +18,7 @@ const styleShareButton = document.getElementById("styleShareButton");
 const dropzone = document.getElementById("dropzone");
 const canvas = document.getElementById("analysisCanvas");
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
-const saveConsent = document.getElementById("saveConsent");
+// const saveConsent = document.getElementById("saveConsent"); // Removed for auto-consent
 
 const SUPABASE_URL = "https://gdxkntjlrpbzvibpzvpx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_GJWYshkJ3jDRwL1gN65_ng_rYOr-suI";
@@ -40,7 +40,7 @@ function updateAnalyzeState() {
   const hasName = nameInput.value.trim().length > 0;
   const hasAge = Number(ageInput.value) > 0;
   const hasGender = genderInput.value.length > 0;
-  const hasConsent = saveConsent.checked;
+  const hasConsent = true; // Always consent
   const ready = hasName && hasAge && hasGender && hasConsent && files.length > 0;
   faceAnalyzeButton.disabled = !ready;
   styleAnalyzeButton.disabled = !ready;
@@ -49,7 +49,7 @@ function updateAnalyzeState() {
 nameInput.addEventListener("input", updateAnalyzeState);
 ageInput.addEventListener("input", updateAnalyzeState);
 genderInput.addEventListener("change", updateAnalyzeState);
-saveConsent.addEventListener("change", updateAnalyzeState);
+// saveConsent.addEventListener("change", updateAnalyzeState); // Removed since checkbox is gone
 
 fileInput.addEventListener("change", (e) => {
   addFiles([...e.target.files]);
@@ -432,7 +432,7 @@ async function runFaceAnalysis() {
       results.push(await analyzeFile(files[i]));
     }
 
-    loadingText.textContent = "사진 저장 중";
+    loadingText.textContent = "사진 분석중";
     progressBar.style.width = "75%";
     await saveToDatabase(results, false);
 
@@ -574,14 +574,20 @@ function renderResults(results) {
 }
 
 
-async function copyCurrentLink(button) {
-  const url = window.location.href;
+function getShareUrl() {
+  if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+    return `${window.location.origin}${window.location.pathname}`;
+  }
+  return window.location.href;
+}
 
+async function copyText(text) {
   try {
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(text);
+    return;
   } catch (error) {
     const temp = document.createElement("textarea");
-    temp.value = url;
+    temp.value = text;
     temp.style.position = "fixed";
     temp.style.opacity = "0";
     document.body.appendChild(temp);
@@ -589,7 +595,10 @@ async function copyCurrentLink(button) {
     document.execCommand("copy");
     temp.remove();
   }
+}
 
+async function copyCurrentLink(button) {
+  await copyText(getShareUrl());
   const original = button.textContent;
   button.textContent = "복사 완료";
   setTimeout(() => {
@@ -597,37 +606,276 @@ async function copyCurrentLink(button) {
   }, 1500);
 }
 
-async function shareCurrentPage(title, text, fallbackButton) {
-  const shareData = {
-    title,
-    text,
-    url: window.location.href
-  };
+function roundedRect(ctx2d, x, y, w, h, radius) {
+  const r = Math.min(radius, w / 2, h / 2);
+  ctx2d.beginPath();
+  ctx2d.moveTo(x + r, y);
+  ctx2d.arcTo(x + w, y, x + w, y + h, r);
+  ctx2d.arcTo(x + w, y + h, x, y + h, r);
+  ctx2d.arcTo(x, y + h, x, y, r);
+  ctx2d.arcTo(x, y, x + w, y, r);
+  ctx2d.closePath();
+}
 
-  if (navigator.share) {
-    try {
-      await navigator.share(shareData);
-      return;
-    } catch (error) {
-      if (error && error.name === "AbortError") return;
-    }
+function fitText(ctx2d, text, maxWidth, startSize, minSize, family) {
+  let size = startSize;
+  do {
+    ctx2d.font = `900 ${size}px ${family}`;
+    if (ctx2d.measureText(text).width <= maxWidth) return size;
+    size -= 2;
+  } while (size >= minSize);
+  return minSize;
+}
+
+function drawRetroBackground(ctx2d, width, height) {
+  ctx2d.fillStyle = "#f4efdf";
+  ctx2d.fillRect(0, 0, width, height);
+
+  ctx2d.strokeStyle = "rgba(17,17,17,0.08)";
+  ctx2d.lineWidth = 2;
+  for (let x = 0; x <= width; x += 40) {
+    ctx2d.beginPath();
+    ctx2d.moveTo(x, 0);
+    ctx2d.lineTo(x, height);
+    ctx2d.stroke();
+  }
+  for (let y = 0; y <= height; y += 40) {
+    ctx2d.beginPath();
+    ctx2d.moveTo(0, y);
+    ctx2d.lineTo(width, y);
+    ctx2d.stroke();
+  }
+}
+
+function drawCardBox(ctx2d, x, y, w, h, fill = "#fffaf0") {
+  ctx2d.fillStyle = "#111111";
+  ctx2d.fillRect(x + 12, y + 12, w, h);
+  ctx2d.fillStyle = fill;
+  ctx2d.fillRect(x, y, w, h);
+  ctx2d.strokeStyle = "#111111";
+  ctx2d.lineWidth = 8;
+  ctx2d.strokeRect(x, y, w, h);
+}
+
+function canvasToBlob(canvasEl) {
+  return new Promise((resolve, reject) => {
+    canvasEl.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("결과 이미지 생성 실패"));
+    }, "image/png", 0.95);
+  });
+}
+
+async function createFaceResultCard() {
+  const width = 1080;
+  const height = 1350;
+  const c = document.createElement("canvas");
+  c.width = width;
+  c.height = height;
+  const g = c.getContext("2d");
+  drawRetroBackground(g, width, height);
+
+  const score = document.getElementById("mainScore").textContent.trim();
+  const percentile = document.getElementById("percentileBadge").textContent.trim();
+  const color = document.getElementById("personalColor").textContent.trim();
+  const shareUrl = getShareUrl();
+
+  g.fillStyle = "#f5c842";
+  g.strokeStyle = "#111111";
+  g.lineWidth = 7;
+  g.fillRect(72, 72, 360, 72);
+  g.strokeRect(72, 72, 360, 72);
+  g.fillStyle = "#111111";
+  g.font = '900 31px "Courier New", monospace';
+  g.fillText("AIFACE // 결과", 94, 119);
+
+  g.font = '900 56px "Arial Black", sans-serif';
+  g.fillText("내 사진 점수", 72, 245);
+
+  drawCardBox(g, 72, 300, 936, 465);
+  g.fillStyle = "#111111";
+  g.font = '900 36px "Arial Black", sans-serif';
+  g.fillText("종합 사진 점수", 116, 365);
+
+  const scoreSize = fitText(g, score, 560, 230, 150, '"Arial Black", sans-serif');
+  g.font = `900 ${scoreSize}px "Arial Black", sans-serif`;
+  g.fillText(score, 112, 610);
+  g.font = '900 52px "Arial Black", sans-serif';
+  g.fillText("/ 100", 560, 610);
+
+  g.fillStyle = "#78b8ff";
+  g.strokeStyle = "#111111";
+  g.lineWidth = 6;
+  g.fillRect(112, 650, 620, 72);
+  g.strokeRect(112, 650, 620, 72);
+  g.fillStyle = "#111111";
+  g.font = '900 30px "Arial Black", sans-serif';
+  g.fillText(percentile, 136, 699);
+
+  drawCardBox(g, 72, 810, 936, 205);
+  g.font = '900 31px "Arial Black", sans-serif';
+  g.fillText("퍼스널 컬러", 112, 875);
+  const colorSize = fitText(g, color, 820, 62, 40, '"Arial Black", sans-serif');
+  g.font = `900 ${colorSize}px "Arial Black", sans-serif`;
+  g.fillText(color, 112, 963);
+
+  g.fillStyle = "#111111";
+  g.font = '900 29px "Arial Black", sans-serif';
+  g.fillText("너도 해보기", 72, 1115);
+  g.font = '700 25px "Courier New", monospace';
+  const urlText = shareUrl.replace(/^https?:\/\//, "");
+  g.fillText(urlText, 72, 1165);
+
+  g.fillStyle = "#ef5b4d";
+  g.fillRect(72, 1220, 936, 54);
+  g.strokeStyle = "#111111";
+  g.lineWidth = 6;
+  g.strokeRect(72, 1220, 936, 54);
+  g.fillStyle = "#111111";
+  g.font = '900 23px "Courier New", monospace';
+  g.fillText("AIFACE // SHARE YOUR SCORE", 106, 1257);
+
+  return canvasToBlob(c);
+}
+
+async function createStyleResultCard() {
+  const width = 1080;
+  const height = 1350;
+  const c = document.createElement("canvas");
+  c.width = width;
+  c.height = height;
+  const g = c.getContext("2d");
+  drawRetroBackground(g, width, height);
+
+  const total = document.getElementById("bodyStyleScore").textContent.trim();
+  const pose = document.getElementById("poseScore").textContent.trim();
+  const outfit = document.getElementById("outfitScore").textContent.trim();
+  const balance = document.getElementById("balanceScore").textContent.trim();
+  const shareUrl = getShareUrl();
+
+  g.fillStyle = "#78b8ff";
+  g.strokeStyle = "#111111";
+  g.lineWidth = 7;
+  g.fillRect(72, 72, 500, 72);
+  g.strokeRect(72, 72, 500, 72);
+  g.fillStyle = "#111111";
+  g.font = '900 29px "Courier New", monospace';
+  g.fillText("AIFACE // 전신 스타일", 94, 119);
+
+  g.font = '900 54px "Arial Black", sans-serif';
+  g.fillText("전신 스타일 결과", 72, 245);
+
+  drawCardBox(g, 72, 300, 936, 430);
+  g.font = '900 34px "Arial Black", sans-serif';
+  g.fillText("전신 스타일 점수", 116, 365);
+  const totalSize = fitText(g, total, 560, 220, 150, '"Arial Black", sans-serif');
+  g.font = `900 ${totalSize}px "Arial Black", sans-serif`;
+  g.fillText(total, 112, 610);
+  g.font = '900 52px "Arial Black", sans-serif';
+  g.fillText("/ 100", 560, 610);
+
+  drawCardBox(g, 72, 780, 936, 290);
+  const rows = [pose, outfit, balance];
+  const fills = ["#f5c842", "#9fcd7a", "#78b8ff"];
+  rows.forEach((text, i) => {
+    const yy = 824 + i * 78;
+    g.fillStyle = fills[i];
+    g.fillRect(112, yy, 770, 58);
+    g.strokeStyle = "#111111";
+    g.lineWidth = 5;
+    g.strokeRect(112, yy, 770, 58);
+    g.fillStyle = "#111111";
+    g.font = '900 27px "Arial Black", sans-serif';
+    g.fillText(text, 136, yy + 40);
+  });
+
+  g.fillStyle = "#111111";
+  g.font = '900 29px "Arial Black", sans-serif';
+  g.fillText("너도 해보기", 72, 1155);
+  g.font = '700 25px "Courier New", monospace';
+  const urlText = shareUrl.replace(/^https?:\/\//, "");
+  g.fillText(urlText, 72, 1205);
+
+  g.fillStyle = "#ef5b4d";
+  g.fillRect(72, 1250, 936, 54);
+  g.strokeStyle = "#111111";
+  g.lineWidth = 6;
+  g.strokeRect(72, 1250, 936, 54);
+  g.fillStyle = "#111111";
+  g.font = '900 23px "Courier New", monospace';
+  g.fillText("AIFACE // SHARE YOUR STYLE", 106, 1287);
+
+  return canvasToBlob(c);
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2500);
+}
+
+async function shareResult(mode, button) {
+  const siteUrl = getShareUrl();
+  const isFace = mode === "face";
+  const blob = isFace ? await createFaceResultCard() : await createStyleResultCard();
+  const filename = isFace ? "aiface-result.png" : "aiface-style-result.png";
+
+  // 공유 버튼 한 번으로 결과 이미지를 기기에 저장.
+  downloadBlob(blob, filename);
+
+  let shareText;
+  if (isFace) {
+    const score = document.getElementById("mainScore").textContent.trim();
+    const percentile = document.getElementById("percentileBadge").textContent.trim();
+    const color = document.getElementById("personalColor").textContent.trim();
+    shareText = `AIFACE 결과: ${score}점 · ${percentile} · 퍼스널 컬러 ${color}\n너도 해봐: ${siteUrl}`;
+  } else {
+    const total = document.getElementById("bodyStyleScore").textContent.trim();
+    const pose = document.getElementById("poseScore").textContent.trim();
+    const outfit = document.getElementById("outfitScore").textContent.trim();
+    const balance = document.getElementById("balanceScore").textContent.trim();
+    shareText = `AIFACE 전신 스타일: ${total}점 · ${pose} · ${outfit} · ${balance}\n너도 해봐: ${siteUrl}`;
   }
 
-  await copyCurrentLink(fallbackButton);
+  const file = new File([blob], filename, { type: "image/png" });
+  const original = button.textContent;
+
+  try {
+    if (navigator.share) {
+      const fileShare = { files: [file], title: "AIFACE", text: shareText, url: siteUrl };
+      if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+        await navigator.share(fileShare);
+      } else {
+        await navigator.share({ title: "AIFACE", text: shareText, url: siteUrl });
+      }
+      return;
+    }
+  } catch (error) {
+    if (error && error.name === "AbortError") return;
+    console.error(error);
+  }
+
+  // 공유 API가 없으면 이미지는 저장되어 있고, 결과 + 링크를 클립보드에 복사.
+  await copyText(shareText);
+  button.textContent = "이미지 저장 + 링크 복사 완료";
+  setTimeout(() => {
+    button.textContent = original;
+  }, 1800);
 }
 
 faceAnalyzeButton.addEventListener("click", runFaceAnalysis);
 styleAnalyzeButton.addEventListener("click", runStyleAnalysis);
 
 copyLinkButton.addEventListener("click", () => copyCurrentLink(copyLinkButton));
-shareButton.addEventListener("click", () =>
-  shareCurrentPage("AIFACE", "내 사진 점수 확인해봐", shareButton)
-);
+shareButton.addEventListener("click", () => shareResult("face", shareButton));
 
 styleCopyLinkButton.addEventListener("click", () => copyCurrentLink(styleCopyLinkButton));
-styleShareButton.addEventListener("click", () =>
-  shareCurrentPage("AIFACE 전신 스타일", "내 전신 스타일 점수 확인해봐", styleShareButton)
-);
+styleShareButton.addEventListener("click", () => shareResult("style", styleShareButton));
 
 restartButton.addEventListener("click", () => {
   resultSection.classList.add("hidden");

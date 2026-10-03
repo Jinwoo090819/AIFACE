@@ -284,3 +284,6 @@ footer{text-align:center;font-family:'Press Start 2P','Noto Sans KR',sans-serif;
     grid-column:1 / -1;
   }
 }
+
+.share-accent{min-width:190px}
+@media(max-width:720px){.share-accent{min-width:0}}
