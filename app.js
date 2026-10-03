@@ -9,11 +9,16 @@ const setupSection = document.getElementById("setupSection");
 const loadingSection = document.getElementById("loadingSection");
 const resultSection = document.getElementById("resultSection");
 const restartButton = document.getElementById("restartButton");
+const copyLinkButton = document.getElementById("copyLinkButton");
+const shareButton = document.getElementById("shareButton");
 const styleResultSection = document.getElementById("styleResultSection");
 const styleRestartButton = document.getElementById("styleRestartButton");
+const styleCopyLinkButton = document.getElementById("styleCopyLinkButton");
+const styleShareButton = document.getElementById("styleShareButton");
 const dropzone = document.getElementById("dropzone");
 const canvas = document.getElementById("analysisCanvas");
 const ctx = canvas.getContext("2d", { willReadFrequently: true });
+const saveConsent = document.getElementById("saveConsent");
 
 const SUPABASE_URL = "https://gdxkntjlrpbzvibpzvpx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_GJWYshkJ3jDRwL1gN65_ng_rYOr-suI";
@@ -35,7 +40,7 @@ function updateAnalyzeState() {
   const hasName = nameInput.value.trim().length > 0;
   const hasAge = Number(ageInput.value) > 0;
   const hasGender = genderInput.value.length > 0;
-  const hasConsent = true;
+  const hasConsent = saveConsent.checked;
   const ready = hasName && hasAge && hasGender && hasConsent && files.length > 0;
   faceAnalyzeButton.disabled = !ready;
   styleAnalyzeButton.disabled = !ready;
@@ -44,6 +49,7 @@ function updateAnalyzeState() {
 nameInput.addEventListener("input", updateAnalyzeState);
 ageInput.addEventListener("input", updateAnalyzeState);
 genderInput.addEventListener("change", updateAnalyzeState);
+saveConsent.addEventListener("change", updateAnalyzeState);
 
 fileInput.addEventListener("change", (e) => {
   addFiles([...e.target.files]);
@@ -237,7 +243,7 @@ function analyzeImageData(data, width, height) {
 
   const score = clamp(
     72 - brightnessPenalty + contrastScore + edgeScore + saturationBalance,
-    35,
+    40,
     98
   );
 
@@ -421,12 +427,12 @@ async function runFaceAnalysis() {
     const results = [];
 
     for (let i = 0; i < files.length; i++) {
-      loadingText.textContent = `사진 불러오는 중 ${i + 1}/${files.length}`;
+      loadingText.textContent = `사진 분석 중 ${i + 1}/${files.length}`;
       progressBar.style.width = `${Math.round((i / files.length) * 65)}%`;
       results.push(await analyzeFile(files[i]));
     }
 
-    loadingText.textContent = "사진 분석 중";
+    loadingText.textContent = "사진 저장 중";
     progressBar.style.width = "75%";
     await saveToDatabase(results, false);
 
@@ -465,7 +471,7 @@ async function runStyleAnalysis() {
       results.push(await analyzeFile(files[i]));
     }
 
-    loadingText.textContent = "결과 내보내는 중";
+    loadingText.textContent = "결과 저장 중";
     progressBar.style.width = "75%";
     await saveToDatabase(results, true);
 
@@ -567,8 +573,61 @@ function renderResults(results) {
 
 }
 
+
+async function copyCurrentLink(button) {
+  const url = window.location.href;
+
+  try {
+    await navigator.clipboard.writeText(url);
+  } catch (error) {
+    const temp = document.createElement("textarea");
+    temp.value = url;
+    temp.style.position = "fixed";
+    temp.style.opacity = "0";
+    document.body.appendChild(temp);
+    temp.select();
+    document.execCommand("copy");
+    temp.remove();
+  }
+
+  const original = button.textContent;
+  button.textContent = "복사 완료";
+  setTimeout(() => {
+    button.textContent = original;
+  }, 1500);
+}
+
+async function shareCurrentPage(title, text, fallbackButton) {
+  const shareData = {
+    title,
+    text,
+    url: window.location.href
+  };
+
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+      return;
+    } catch (error) {
+      if (error && error.name === "AbortError") return;
+    }
+  }
+
+  await copyCurrentLink(fallbackButton);
+}
+
 faceAnalyzeButton.addEventListener("click", runFaceAnalysis);
 styleAnalyzeButton.addEventListener("click", runStyleAnalysis);
+
+copyLinkButton.addEventListener("click", () => copyCurrentLink(copyLinkButton));
+shareButton.addEventListener("click", () =>
+  shareCurrentPage("AIFACE", "내 사진 점수 확인해봐", shareButton)
+);
+
+styleCopyLinkButton.addEventListener("click", () => copyCurrentLink(styleCopyLinkButton));
+styleShareButton.addEventListener("click", () =>
+  shareCurrentPage("AIFACE 전신 스타일", "내 전신 스타일 점수 확인해봐", styleShareButton)
+);
 
 restartButton.addEventListener("click", () => {
   resultSection.classList.add("hidden");

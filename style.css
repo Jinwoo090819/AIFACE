@@ -257,3 +257,30 @@ footer{text-align:center;font-family:'Press Start 2P','Noto Sans KR',sans-serif;
     grid-template-columns:1fr;
   }
 }
+
+.result-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.share-accent{
+  background:var(--yellow);
+}
+.result-actions .ghost{
+  min-width:108px;
+}
+@media(max-width:720px){
+  .result-actions{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+  .result-actions .ghost{
+    width:100%;
+    min-width:0;
+  }
+  .result-actions .ghost:last-child{
+    grid-column:1 / -1;
+  }
+}

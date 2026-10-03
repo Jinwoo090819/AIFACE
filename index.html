@@ -68,6 +68,12 @@
       </label>
 
       <div id="previewGrid" class="preview-grid"></div>
+
+      <label class="consent-row">
+        <input id="saveConsent" type="checkbox" />
+        <span>입력 정보와 사진 저장에 동의합니다.</span>
+      </label>
+
       <div class="mode-actions">
         <button id="faceAnalyzeButton" class="primary" disabled>얼굴 / 사진 분석</button>
         <button id="styleAnalyzeButton" class="primary secondary-action" disabled>전신 스타일 분석</button>
@@ -90,7 +96,11 @@
           <h2 id="resultTitle">분석 결과</h2>
           <p id="resultMeta"></p>
         </div>
-        <button id="restartButton" class="ghost">다시 분석</button>
+        <div class="result-actions">
+          <button id="copyLinkButton" class="ghost">링크 복사</button>
+          <button id="shareButton" class="ghost share-accent">공유하기</button>
+          <button id="restartButton" class="ghost">다시 분석</button>
+        </div>
       </div>
 
       <div class="result-grid">
@@ -126,7 +136,11 @@
           <h2 id="styleResultTitle">전신 스타일 분석</h2>
           <p id="styleResultMeta"></p>
         </div>
-        <button id="styleRestartButton" class="ghost">다시 분석</button>
+        <div class="result-actions">
+          <button id="styleCopyLinkButton" class="ghost">링크 복사</button>
+          <button id="styleShareButton" class="ghost share-accent">공유하기</button>
+          <button id="styleRestartButton" class="ghost">다시 분석</button>
+        </div>
       </div>
 
       <div class="style-result-grid">
